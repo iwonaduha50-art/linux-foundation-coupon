@@ -1,0 +1,35 @@
+name: Upstream Sync
+permissions:
+  contents: write
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # 定时任务，这里代表每天UTC时间0点（北京时间早上8点）执行
+  workflow_dispatch:     # 允许手动触发
+
+jobs:
+  sync_with_upstream:
+    name: Sync with Upstream
+    runs-on: ubuntu-latest
+    if: ${{ github.event.repository.fork }}
+
+    steps:
+    - name: Checkout target repo
+      uses: actions/checkout@v3
+
+    - name: Sync Upstream
+      uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
+      with:
+        target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+        # 注意：下面这一行可以按需配置，如果留空或删除，此Action会自动检测上游仓库
+        upstream_sync_repo: techiescamp/linux-foundation-coupon
+        upstream_sync_branch: main
+        target_sync_branch: main
+        test_mode: false
+
+    - name: Check for Failure
+      if: failure()
+      run: |
+        echo "[Error] 由于上游仓库的工作流文件发生变更，GitHub已自动暂停了定时自动更新。"
+        echo "你需要手动同步你的仓库。"
+        exit 1
